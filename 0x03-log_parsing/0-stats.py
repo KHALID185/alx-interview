@@ -1,37 +1,56 @@
 #!/usr/bin/python3
-"""Script that reads stdin line by line and computes metrics"""
-
+"""
+Script that reads stdin line by line and computes metrics.
+Calculates total file size and counts of HTTP status codes.
+"""
 
 import sys
+import re
+from typing import Dict, Union, Match
 
 
-def print_stats(size, status_codes):
-    """Print accumulated metrics"""
-    print("File size: {}".format(size))
-    for key in sorted(status_codes.keys()):
-        if status_codes[key] != 0:
-            print("{}: {}".format(key, status_codes[key]))
-
-
-def parse_line(line):
+def validate_line(line: str) -> Union[Match, None]:
     """
-    Parse a line and return the status code and file size
-    Returns None if line is invalid
+    Validates if a line matches the expected log format using regex.
+    Format: <IP Address> - [<date>] "GET /projects/260 HTTP/1.1"
+
+    Args:
+        line (str): Input line to validate
+
+    Returns:
+        Match object if valid, None otherwise
     """
-    try:
-        parts = line.split()
-        if len(parts) < 2:
-            return None
-        status_code = int(parts[-2])
-        file_size = int(parts[-1])
-        return status_code, file_size
-    except (ValueError, IndexError):
-        return None
+    pattern = (
+        r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} - '
+        r'\[.+\] '
+        r'"GET /projects/260 HTTP/1.1" '
+        r'(\d{3}) '
+        r'(\d+)$'
+    )
+    return re.match(pattern, line)
 
 
-if __name__ == "__main__":
-    size = 0
-    count = 0
+def print_statistics(total_size: int, status_codes: Dict[int, int]) -> None:
+    """
+    Prints the computed statistics.
+
+    Args:
+        total_size (int): Total sum of file sizes
+        status_codes (dict): Dictionary with status codes and their counts
+    """
+    print(f"File size: {total_size}")
+    for code in sorted(status_codes.keys()):
+        if status_codes[code] > 0:
+            print(f"{code}: {status_codes[code]}")
+
+
+def process_logs() -> None:
+    """
+    Main function to process logs from stdin.
+    Handles the log parsing and statistics computation.
+    """
+    total_size = 0
+    line_count = 0
     status_codes = {
         200: 0, 301: 0, 400: 0, 401: 0,
         403: 0, 404: 0, 405: 0, 500: 0
@@ -39,18 +58,27 @@ if __name__ == "__main__":
 
     try:
         for line in sys.stdin:
-            count += 1
-            parsed = parse_line(line)
+            line = line.strip()
+            match = validate_line(line)
 
-            if parsed:
-                status_code, file_size = parsed
+            if match:
+                status_code = int(match.group(1))
+                file_size = int(match.group(2))
+
                 if status_code in status_codes:
                     status_codes[status_code] += 1
-                size += file_size
+                total_size += file_size
+                line_count += 1
 
-            if count % 10 == 0:
-                print_stats(size, status_codes)
+                if line_count % 10 == 0:
+                    print_statistics(total_size, status_codes)
 
     except KeyboardInterrupt:
-        print_stats(size, status_codes)
-        raise
+        print_statistics(total_size, status_codes)
+        sys.exit(0)
+
+    print_statistics(total_size, status_codes)
+
+
+if __name__ == "__main__":
+    process_logs()
