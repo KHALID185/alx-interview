@@ -31,14 +31,13 @@ async function printMovieCharacters(movieId) {
     const characterPromises = characterUrls.map(url => makeRequest(url));
     const characters = await Promise.all(characterPromises);
 
-    // Print each character name with proper formatting
+    // Print characters names
     characters.forEach((character, index) => {
-      const name = character.name;
-      // For the last character, don't add a newline
       if (index === characters.length - 1) {
-        process.stdout.write(name);
+        // Last character - no newline
+        process.stdout.write(character.name);
       } else {
-        process.stdout.write(name + '\n');
+        console.log(character.name);
       }
     });
   } catch (error) {
@@ -47,39 +46,12 @@ async function printMovieCharacters(movieId) {
   }
 }
 
-// Debug function to show hidden characters
-function debugOutput(movieId) {
-  return new Promise((resolve) => {
-    let output = '';
-    const oldWrite = process.stdout.write;
-    process.stdout.write = (function(write) {
-      return function(string, encoding, fd) {
-        output += string;
-        write.apply(process.stdout, arguments);
-      };
-    })(process.stdout.write);
-
-    printMovieCharacters(movieId).then(() => {
-      process.stdout.write = oldWrite;
-      console.log('\n\nDEBUG INFO:');
-      console.log('Length:', output.length);
-      console.log('Characters (showing hidden):');
-      for (let i = 0; i < output.length; i++) {
-        const char = output[i];
-        const code = output.charCodeAt(i);
-        console.log(`Position ${i}: '${char}' (ASCII: ${code})`);
-      }
-      resolve();
-    });
-  });
-}
-
+// Get movie ID from command line argument
 const movieId = process.argv[2];
 if (!movieId) {
   console.error('Please provide a movie ID');
   process.exit(1);
 }
 
-// Comment out this line and uncomment the one below for normal usage
-// printMovieCharacters(movieId);
-debugOutput(movieId);
+// Execute main function
+printMovieCharacters(movieId);
