@@ -1,17 +1,20 @@
 #!/usr/bin/python3
 """
-Prime Game Problem: Optimized Solution for Maria and Ben's Game
+Prime Game Problem: Comprehensive Solution for Maria and Ben's Game
 """
 
 
-def sieve_of_eratosthenes(n):
+def generate_primes(n):
     """
     Efficiently generate prime numbers up to n using Sieve of Eratosthenes
     Args:
         n (int): Upper limit for generating primes
     Returns:
-        list: Primes numbers up to n
+        list: Prime numbers up to n
     """
+    if n < 2:
+        return []
+
     # Initialize boolean array for prime checking
     is_prime = [True] * (n + 1)
     is_prime[0] = is_prime[1] = False
@@ -27,16 +30,20 @@ def sieve_of_eratosthenes(n):
     return [num for num in range(2, n+1) if is_prime[num]]
 
 
-def count_primes_and_moves(n):
+def game_outcome(n):
     """
-    Determine the number of primes and game outcome for a single round
+    Determine the game outcome for a single round
     Args:
         n (int): Upper limit of the game range
     Returns:
         bool: True if Ben wins, False if Maria wins
     """
+    # Special case: If n is 1, Ben wins
+    if n == 1:
+        return True
+
     # Get primes in the range
-    primes = sieve_of_eratosthenes(n)
+    primes = generate_primes(n)
 
     # Game outcome depends on number of primes
     return len(primes) % 2 == 0
@@ -52,7 +59,7 @@ def isWinner(x, nums):
         str/None: Name of the winner or None if no clear winner
     """
     # Input validation
-    if not x or not nums or x != len(nums):
+    if not x or x <= 0 or not nums or len(nums) != x:
         return None
 
     # Track wins for Maria and Ben
@@ -60,7 +67,7 @@ def isWinner(x, nums):
 
     # Play each round
     for n in nums:
-        if count_primes_and_moves(n):
+        if game_outcome(n):
             ben_wins += 1
         else:
             maria_wins += 1
